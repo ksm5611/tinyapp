@@ -2,9 +2,9 @@ const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 
-function generateRandomString() {
+// function generateRandomString() {
 
-}
+// }
 
 
 app.set("view engine", "ejs");
@@ -28,7 +28,7 @@ app.listen(PORT, () => {
 
 app.post("/urls", (req, res) => {
   console.log(req.body);  // Log the POST request body to the console
-  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+  res.send("go to a new page");         // Respond with 'Ok' (we will replace this)
 });
 
 // root path '/'; JSON string representing the entire urlDatabase object can see
@@ -52,9 +52,6 @@ app.get("/urls", (req, res) => {
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
-
-
-
 
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
