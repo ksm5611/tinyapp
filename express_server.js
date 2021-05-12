@@ -60,12 +60,17 @@ app.get("/urls", (req, res) => {
 
 // if we place this route after the /urls/:id definition, any calls to /urls/new will be handled by app.get("/urls/:id", ...) because Express will think that new is a route parameter.
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const templateVars = { username: req.cookies['username'] };
+  res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
-  const templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL] };
+  const templateVars = {
+    shortURL: shortURL,
+    longURL: urlDatabase[shortURL],
+    username: req.cookies['username']
+  };
   res.render("urls_show", templateVars);
 });
 
