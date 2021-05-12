@@ -16,6 +16,14 @@ const generateRandomString = function(length, arr) {
   return random;
 };
 
+const newRandomId = function(length, arr) {
+  let random = '';
+  for (let i = length; i > 0; i--) {
+    random += arr[Math.floor(Math.random() * arr.length)];
+  }
+  return random;
+};
+
 const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 const urlDatabase = {
@@ -23,12 +31,22 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const users = {
+  "userRandomID": {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur"
+  },
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk"
+  }
+};
 
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
-
-
 
 app.post("/urls", (req, res) => {
   const newString = generateRandomString(6, chars);
@@ -51,9 +69,12 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
+  let userId = req.cookies['user_id'];
+  // console.log('users', users);
+  // console.log(users[userId]);
   const templateVars = {
     urls: urlDatabase,
-    username: req.cookies['username']
+    user: users[userId]
   };
   res.render("urls_index", templateVars);
 });
@@ -67,6 +88,11 @@ app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL] };
   res.render("urls_show", templateVars);
+});
+
+app.get("/register", (req, res) => {
+  const templateVars = {user: null};
+  res.render('register', templateVars);
 });
 
 app.post('/urls/:shortURL/delete', (req, res) => {
@@ -94,6 +120,19 @@ app.post('/logout', (req, res) => {
   res.redirect("/urls");
 });
 
+app.post('/register', (req, res) => {
+  const userId = newRandomId(6, chars);
+  // console.log(req);
+  users[userId] = {
+    id: userId,
+    email: req.body.email,
+    password: req.body.password
+  };
+  res.cookie('user_id', userId);
+  res.redirect("/urls");
+});
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
+
