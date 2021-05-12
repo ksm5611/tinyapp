@@ -4,13 +4,18 @@ const bodyParser = require("body-parser");
 
 const app = express();
 app.set("view engine", "ejs");
-
-// function generateRandomString() {
-
-// }
-
 //middleware
 app.use(bodyParser.urlencoded({extended: true}));
+
+const generateRandomString = function(length, arr) {
+  let random = '';
+  for (let i = length; i > 0; i--) {
+    random += arr[Math.floor(Math.random() * arr.length)];
+  }
+  return random;
+};
+
+const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -28,9 +33,12 @@ app.listen(PORT, () => {
 
 
 app.post("/urls", (req, res) => {
-  console.log(req.body);  // Log the POST request body to the console
-  res.send("go to a new page");         // Respond with 'Ok' (we will replace this)
+  const newString = generateRandomString(6, chars);
+  urlDatabase[newString] = req.body.longURL;
+  // res.send("go to a new page");
+  res.redirect('/urls');
 });
+
 
 // root path '/'; JSON string representing the entire urlDatabase object can see
 // '/sth' --> route
@@ -66,7 +74,10 @@ app.post('/urls/:shortURL/delete', (req, res) => {
   res.redirect("/urls");
 });
 
-app.post('/urls/:shortURL/delete', (req, res) => {
-  res.redirect('urls');
+app.post('/urls/:shortURL', (req, res) => {
+  const newLongURL = req.body.longURL;
+  const shortURL = req.params.shortURL;
+  urlDatabase[shortURL] = newLongURL;
+  res.redirect('/urls');
 });
 
