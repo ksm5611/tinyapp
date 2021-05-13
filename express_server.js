@@ -1,11 +1,16 @@
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
+const bcrypt = require('bcrypt');
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 app.use(bodyParser.urlencoded({extended: true}));  //middleware
 app.use(cookieParser());
 app.set("view engine", "ejs");
+
+const password = "purple-monkey-dinosaur"; // found in the req.params object
+const hashedPassword = bcrypt.hashSync(password, 10);
+
 
 
 const generateRandomString = function(length, arr) {
@@ -169,7 +174,7 @@ app.post('/login', (req, res) => {
     res.status(403).send('Not Found');
   }
   if (users[userId] && password === users[userId].password) {
-    res.cookie('user_id', userId);
+    res.cookie('user_id', userId); //이부분이 req.session.'user_id' = userId;
   } else {
     res.status(403).send('Forbidden');
   }
@@ -184,9 +189,13 @@ app.post('/logout', (req, res) => {
 
 
 app.post('/register', (req, res) => {
-  const userId = newRandomId(6, chars);
-  // console.log(users);
+  bcrypt.genSalt(hashedPassword, function(err, salt) {
+    bcrypt.hash(password, salt, function(err, hash) {
+      console.log(hash);
+    });
+  });
 
+  const userId = newRandomId(6, chars);
   if (req.body.email === '' || req.body.password === '' || findExistingEmail(req.body.email)) {
     const status = 400;
     res
