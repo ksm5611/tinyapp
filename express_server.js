@@ -95,7 +95,7 @@ app.get("/urls/:shortURL", (req, res) => {
 
 app.get('/login', (req, res) => {
   let userId = req.cookies['user_id'];
-  const templateVars = {user: users[userId] };
+  const templateVars = {user: users[userId]};
   res.render('login', templateVars);
 });
 
@@ -132,12 +132,12 @@ app.post('/login', (req, res) => {
   const password = req.body.password;
   const userId = findUserIdByEmail(email);
   if (!userId) {
-    res.status(400).send('error')
+    res.status(403).send('Not Found');
   }
   if (users[userId] && password === users[userId].password) {
     res.cookie('user_id', userId);
   } else {
-    res.status(400).send('error');
+    res.status(403).send('Forbidden');
   }
 
   res.redirect("/urls");

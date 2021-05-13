@@ -15,8 +15,8 @@
       <% }%>
       <% if (user) {%>
         <form method="POST" action="/logout">
-          <h5>Logged in As:<%= user.email %> </h5>
-          <button type="submit" class="btn btn-primary">Logout</button>
+          <label >Logged in As:  <%= user.email %> </label>
+          <button type="submit" class="btn btn-primary"> Logout </button>
         </form>
       <% }%>
     </div>
