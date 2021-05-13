@@ -73,11 +73,23 @@ app.get("/urls", (req, res) => {
   // console.log('users', users);
   // console.log(users[userId]);
   const templateVars = {
-    urls: urlDatabase,
-    user: users[userId]
+    urls: urlsForUser(userId),
+    user: users[userId],
+    error: users[userId] ? null : "Please Login or Register first"
   };
+  // console.log("error", userId);
   res.render("urls_index", templateVars);
 });
+
+const urlsForUser = function(id) {
+  let result = {};
+  for (let shortURL in urlDatabase) {
+    if (urlDatabase[shortURL].userID === id) {
+      result[shortURL] = urlDatabase[shortURL];
+    }
+  }
+  return result;
+};
 
 // if we place this route after the /urls/:id definition, any calls to /urls/new will be handled by app.get("/urls/:id", ...) because Express will think that new is a route parameter.
 app.get("/urls/new", (req, res) => {
@@ -93,7 +105,11 @@ app.get("/urls/new", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   let userId = req.cookies['user_id'];
   const shortURL = req.params.shortURL;
-  const templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL].longURL, user: users[userId] };
+  const templateVars = {
+    shortURL: shortURL,
+    longURL: urlDatabase[shortURL].longURL,
+    user: users[userId],
+    error: users[userId] ? null : "Please Login or Register first" };
   if (userId) {
     res.render("urls_show", templateVars);
   } else {
@@ -113,16 +129,26 @@ app.get("/register", (req, res) => {
 });
 
 app.post('/urls/:shortURL/delete', (req, res) => {
-  const deleteToggle = req.params.shortURL;
-  delete urlDatabase[deleteToggle];
-  res.redirect("/urls");
+  let userId = req.cookies['user_id'];
+  if (!users[userId]) {
+    res.status(403).send('Not Found');
+  } else {
+    const deleteToggle = req.params.shortURL;
+    delete urlDatabase[deleteToggle];
+    res.redirect("/urls");
+  }
 });
 
 app.post('/urls/:shortURL', (req, res) => {
-  const shortURL = req.params.shortURL;
-  const newLongURL = req.body.longURL;
-  urlDatabase[shortURL].longURL = newLongURL;
-  res.redirect('/urls');
+  let userId = req.cookies['user_id'];
+  if (!users[userId]) {
+    res.status(403).send('Not Found');
+  } else {
+    const shortURL = req.params.shortURL;
+    const newLongURL = req.body.longURL;
+    urlDatabase[shortURL].longURL = newLongURL;
+    res.redirect('/urls');
+  }
 });
 
 
