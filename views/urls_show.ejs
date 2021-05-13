@@ -20,6 +20,8 @@
           Short URL: <a href="/u/<%= shortURL %>"><%= shortURL %></a>
         </p>
         <h3>Edit</h3>
+      </div>
+      <div class="card-footer text-muted">
         <form class="form-inline" action="/urls/<%= shortURL %>" method="POST">
           <label for="longURL" class="col-sm-2 col-form-label">New URL:</label>
           <div class="form-group mx-sm-3 mb-2">
@@ -34,7 +36,6 @@
           <button type="submit" class="btn btn-primary mb-2">Submit</button>
         </form>
       </div>
-      <div class="card-footer text-muted"></div>
     </div>
     <!-- Bootstrap JS -->
     <script

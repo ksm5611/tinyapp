@@ -16,6 +16,14 @@ const generateRandomString = function(length, arr) {
   return random;
 };
 
+const newRandomId = function(length, arr) {
+  let random = '';
+  for (let i = length; i > 0; i--) {
+    random += arr[Math.floor(Math.random() * arr.length)];
+  }
+  return random;
+};
+
 const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 const urlDatabase = {
@@ -23,12 +31,22 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const users = {
+  "userRandomID": {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur"
+  },
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk"
+  }
+};
 
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
-
-
 
 app.post("/urls", (req, res) => {
   const newString = generateRandomString(6, chars);
@@ -51,27 +69,39 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
+  let userId = req.cookies['user_id'];
+  // console.log('users', users);
+  // console.log(users[userId]);
   const templateVars = {
     urls: urlDatabase,
-    username: req.cookies['username']
+    user: users[userId]
   };
   res.render("urls_index", templateVars);
 });
 
 // if we place this route after the /urls/:id definition, any calls to /urls/new will be handled by app.get("/urls/:id", ...) because Express will think that new is a route parameter.
 app.get("/urls/new", (req, res) => {
-  const templateVars = { username: req.cookies['username'] };
+  let userId = req.cookies['user_id'];
+  const templateVars = { user: users[userId] };
   res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
+  let userId = req.cookies['user_id'];
   const shortURL = req.params.shortURL;
-  const templateVars = {
-    shortURL: shortURL,
-    longURL: urlDatabase[shortURL],
-    username: req.cookies['username']
-  };
+  const templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL], user: users[userId] };
   res.render("urls_show", templateVars);
+});
+
+app.get('/login', (req, res) => {
+  let userId = req.cookies['user_id'];
+  const templateVars = {user: users[userId]};
+  res.render('login', templateVars);
+});
+
+app.get("/register", (req, res) => {
+  const templateVars = {user: null};
+  res.render('register', templateVars);
 });
 
 app.post('/urls/:shortURL/delete', (req, res) => {
@@ -88,17 +118,70 @@ app.post('/urls/:shortURL', (req, res) => {
 });
 
 
+const findUserIdByEmail = function(email) {
+  for (let user in users) {
+    if (users[user].email === email) {
+      return users[user].id;
+    }
+  }
+  return null;
+};
+
 app.post('/login', (req, res) => {
-  const loginName = req.body.username;
-  res.cookie('username', loginName);
+  const email = req.body.email;
+  const password = req.body.password;
+  const userId = findUserIdByEmail(email);
+  if (!userId) {
+    res.status(403).send('Not Found');
+  }
+  if (users[userId] && password === users[userId].password) {
+    res.cookie('user_id', userId);
+  } else {
+    res.status(403).send('Forbidden');
+  }
+
   res.redirect("/urls");
 });
 
 app.post('/logout', (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie('user_id');
   res.redirect("/urls");
 });
+
+
+app.post('/register', (req, res) => {
+  const userId = newRandomId(6, chars);
+  // console.log(users);
+
+  if (req.body.email === '' || req.body.password === '' || findExistingEmail(req.body.email)) {
+    const status = 400;
+    res
+      .status(status)
+      .send('error');
+  } else {
+    users[userId] = {
+      id: userId,
+      email: req.body.email,
+      password: req.body.password
+    };
+  }
+
+  res.cookie('user_id', userId);
+  res.redirect("/urls");
+});
+
+// true, false
+const findExistingEmail = function(email) {
+  for (let user in users) {
+    // console.log('user', users[user])
+    if (users[user].email === email) {
+      return true;
+    }
+  }
+  return false;
+};
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
+
