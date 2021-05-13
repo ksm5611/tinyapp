@@ -8,10 +8,6 @@ app.use(bodyParser.urlencoded({extended: true}));  //middleware
 app.use(cookieParser());
 app.set("view engine", "ejs");
 
-const password = "purple-monkey-dinosaur"; // found in the req.params object
-const hashedPassword = bcrypt.hashSync(password, 10);
-
-
 
 const generateRandomString = function(length, arr) {
   let random = '';
@@ -36,18 +32,7 @@ const urlDatabase = {
   "9sm5xK": { longURL: "https://www.google.ca", userID: "aJ48lW" }
 };
 
-const users = {
-  "userRandomID": {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: "purple-monkey-dinosaur"
-  },
-  "user2RandomID": {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "dishwasher-funk"
-  }
-};
+const users = {};
 
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -173,8 +158,8 @@ app.post('/login', (req, res) => {
   if (!userId) {
     res.status(403).send('Not Found');
   }
-  if (users[userId] && password === users[userId].password) {
-    res.cookie('user_id', userId); //이부분이 req.session.'user_id' = userId;
+  if (users[userId] && bcrypt.compareSync(password, users[userId].password)) {
+    res.cookie('user_id', userId);
   } else {
     res.status(403).send('Forbidden');
   }
@@ -189,25 +174,18 @@ app.post('/logout', (req, res) => {
 
 
 app.post('/register', (req, res) => {
-  bcrypt.genSalt(hashedPassword, function(err, salt) {
-    bcrypt.hash(password, salt, function(err, hash) {
-      console.log(hash);
-    });
-  });
-
   const userId = newRandomId(6, chars);
   if (req.body.email === '' || req.body.password === '' || findExistingEmail(req.body.email)) {
     const status = 400;
-    res
-      .status(status)
-      .send('error');
+    res.status(status).send('error');
   } else {
     users[userId] = {
       id: userId,
       email: req.body.email,
-      password: req.body.password
+      password: bcrypt.hashSync(req.body.password, 10)
     };
   }
+  console.log(users);
 
   res.cookie('user_id', userId);
   res.redirect("/urls");
