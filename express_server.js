@@ -81,13 +81,22 @@ app.get("/urls", (req, res) => {
 
 // if we place this route after the /urls/:id definition, any calls to /urls/new will be handled by app.get("/urls/:id", ...) because Express will think that new is a route parameter.
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  let userId = req.cookies['user_id'];
+  const templateVars = { user: users[userId] };
+  res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
+  let userId = req.cookies['user_id'];
   const shortURL = req.params.shortURL;
-  const templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL] };
+  const templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL], user: users[userId] };
   res.render("urls_show", templateVars);
+});
+
+app.get('/login', (req, res) => {
+  let userId = req.cookies['user_id'];
+  const templateVars = {user: users[userId] };
+  res.render('login', templateVars);
 });
 
 app.get("/register", (req, res) => {
@@ -109,28 +118,68 @@ app.post('/urls/:shortURL', (req, res) => {
 });
 
 
+const findUserIdByEmail = function(email) {
+  for (let user in users) {
+    if (users[user].email === email) {
+      return users[user].id;
+    }
+  }
+  return null;
+};
+
 app.post('/login', (req, res) => {
-  const loginName = req.body.username;
-  res.cookie('username', loginName);
+  const email = req.body.email;
+  const password = req.body.password;
+  const userId = findUserIdByEmail(email);
+  if (!userId) {
+    res.status(400).send('error')
+  }
+  if (users[userId] && password === users[userId].password) {
+    res.cookie('user_id', userId);
+  } else {
+    res.status(400).send('error');
+  }
+
   res.redirect("/urls");
 });
 
 app.post('/logout', (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie('user_id');
   res.redirect("/urls");
 });
 
+
 app.post('/register', (req, res) => {
   const userId = newRandomId(6, chars);
-  // console.log(req);
-  users[userId] = {
-    id: userId,
-    email: req.body.email,
-    password: req.body.password
-  };
+  // console.log(users);
+
+  if (req.body.email === '' || req.body.password === '' || findExistingEmail(req.body.email)) {
+    const status = 400;
+    res
+      .status(status)
+      .send('error');
+  } else {
+    users[userId] = {
+      id: userId,
+      email: req.body.email,
+      password: req.body.password
+    };
+  }
+
   res.cookie('user_id', userId);
   res.redirect("/urls");
 });
+
+// true, false
+const findExistingEmail = function(email) {
+  for (let user in users) {
+    // console.log('user', users[user])
+    if (users[user].email === email) {
+      return true;
+    }
+  }
+  return false;
+};
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
