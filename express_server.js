@@ -1,38 +1,19 @@
 const express = require("express");
 const app = express();
-const PORT = 8080; // default port 8080
+const PORT = 8080;
 const bcrypt = require('bcrypt');
 const bodyParser = require("body-parser");
 const cookieSession = require('cookie-session');
-const { getUserByEmail } = require('./helpers');
-// const cookieParser = require("cookie-parser");
-app.use(bodyParser.urlencoded({extended: true}));  //middleware
+const { getUserByEmail, randomValue, urlsForUser } = require('./helpers');
+app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieSession({
   name: 'session',
   keys: ['user_id'],
   maxAge: 24 * 60 * 60 * 1000
 }));
-// app.use(cookieParser());
+
 app.set("view engine", "ejs");
 
-
-const generateRandomString = function(length, arr) {
-  let random = '';
-  for (let i = length; i > 0; i--) {
-    random += arr[Math.floor(Math.random() * arr.length)];
-  }
-  return random;
-};
-
-const newRandomId = function(length, arr) {
-  let random = '';
-  for (let i = length; i > 0; i--) {
-    random += arr[Math.floor(Math.random() * arr.length)];
-  }
-  return random;
-};
-
-const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 const urlDatabase = {
   "b2xVn2": { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
@@ -46,53 +27,31 @@ app.get("/", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  const newString = generateRandomString(6, chars);
+  const newString = randomValue(6);
   urlDatabase[newString] = {longURL: req.body.longURL, userID: req.session.user_id};
-  // res.send("go to a new page");
   res.redirect('/urls');
 });
 
-
-// root path '/'; JSON string representing the entire urlDatabase object can see
-// '/sth' --> route
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
 app.get("/hello", (req, res) => {
-  // const templateVars = { greeting: 'Hello World!' };
-  // res.render("hello_world", templateVars);
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
 app.get("/urls", (req, res) => {
-  // let userId = req.cookies['user_id'];
   let userId = req.session.user_id;
-  // console.log("session", userId);
-  // console.log('users', users);
-  // console.log(users[userId]);
   const templateVars = {
-    urls: urlsForUser(userId),
+    urls: urlsForUser(userId, urlDatabase),
     user: users[userId],
     error: users[userId] ? null : "Please Login or Register first"
   };
-  // console.log("error", userId);
   res.render("urls_index", templateVars);
 });
 
-const urlsForUser = function(id) {
-  let result = {};
-  for (let shortURL in urlDatabase) {
-    if (urlDatabase[shortURL].userID === id) {
-      result[shortURL] = urlDatabase[shortURL];
-    }
-  }
-  return result;
-};
 
-// if we place this route after the /urls/:id definition, any calls to /urls/new will be handled by app.get("/urls/:id", ...) because Express will think that new is a route parameter.
 app.get("/urls/new", (req, res) => {
-  // let userId = req.cookies['user_id'];
   let userId = req.session.user_id;
   const templateVars = { user: users[userId] };
   if (userId) {
@@ -103,7 +62,6 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  // let userId = req.cookies['user_id'];
   let userId = req.session.user_id;
   const shortURL = req.params.shortURL;
   const templateVars = {
@@ -152,8 +110,6 @@ app.post('/urls/:shortURL', (req, res) => {
   }
 });
 
-
-
 app.post('/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
@@ -164,11 +120,9 @@ app.post('/login', (req, res) => {
   }
   if (users[userId] && bcrypt.compareSync(password, users[userId].password)) {
     req.session.user_id = userId;
-    // res.cookies('user_id', userId);
   } else {
     res.status(403).send('Forbidden');
   }
-
   res.redirect("/urls");
 });
 
@@ -179,7 +133,7 @@ app.post('/logout', (req, res) => {
 
 
 app.post('/register', (req, res) => {
-  const userId = newRandomId(6, chars);
+  const userId = randomValue(6);
   if (req.body.email === '' || req.body.password === '' || getUserByEmail(req.body.email, users)) {
     const status = 400;
     res.status(status).send('error');
