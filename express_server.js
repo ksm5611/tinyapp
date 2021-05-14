@@ -23,7 +23,11 @@ const urlDatabase = {
 const users = {};
 
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  if (req.session.user_id) {
+    res.redirect('/urls');
+  } else {
+    res.redirect('/login');
+  }
 });
 
 app.post("/urls", (req, res) => {
@@ -78,12 +82,12 @@ app.get("/urls/:shortURL", (req, res) => {
 
 app.get('/login', (req, res) => {
   let userId = req.session.user_id;
-  const templateVars = {user: users[userId]};
+  const templateVars = {user: users[userId], error: null};
   res.render('login', templateVars);
 });
 
 app.get("/register", (req, res) => {
-  const templateVars = {user: null};
+  const templateVars = {user: null, error: null};
   res.render('register', templateVars);
 });
 
@@ -115,20 +119,22 @@ app.post('/login', (req, res) => {
   const password = req.body.password;
   const user = getUserByEmail(email, users);
   const userId = user ? user.id : null;
-  if (!userId) {
-    res.status(403).send('Not Found');
-  }
   if (users[userId] && bcrypt.compareSync(password, users[userId].password)) {
     // eslint-disable-next-line
     req.session.user_id = userId;
+    res.redirect("/urls");
   } else {
-    res.status(403).send('Forbidden');
+    res.status(403);
+    const templateVars = {
+      user: null,
+      error: 'Please check your email or password'
+    };
+    res.render('login', templateVars);
   }
-  res.redirect("/urls");
 });
 
 app.post('/logout', (req, res) => {
-  req.session = null; //
+  req.session = null;
   res.redirect("/urls");
 });
 
@@ -136,20 +142,24 @@ app.post('/logout', (req, res) => {
 app.post('/register', (req, res) => {
   const userId = randomValue(6);
   if (req.body.email === '' || req.body.password === '' || getUserByEmail(req.body.email, users)) {
-    const status = 400;
-    res.status(status).send('error');
+    // const status = 400;
+    // res.status(status).send('error');
+    res.status(403);
+    const templateVars = {
+      user: null,
+      error: 'Register failed!'};
+    res.render('register', templateVars);
   } else {
     users[userId] = {
       id: userId,
       email: req.body.email,
       password: bcrypt.hashSync(req.body.password, 10)
     };
+    // eslint-disable-next-line
+    req.session.user_id = userId;
+    res.redirect("/urls");
   }
-  // eslint-disable-next-line
-  req.session.user_id = userId;
-  res.redirect("/urls");
 });
-
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
