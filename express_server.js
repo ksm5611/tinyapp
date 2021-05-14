@@ -31,9 +31,14 @@ app.get("/", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  const newString = randomValue(6);
-  urlDatabase[newString] = {longURL: req.body.longURL, userID: req.session.user_id};
-  res.redirect('/urls');
+  let userId = req.session.user_id;
+  if (!userId) {
+    res.status(400).send("Please logged in first");
+  } else {
+    const newString = randomValue(6);
+    urlDatabase[newString] = {longURL: req.body.longURL, userID: req.session.user_id};
+    res.redirect(`/urls/${newString}`);
+  }
 });
 
 app.get("/urls.json", (req, res) => {
@@ -54,20 +59,25 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
+app.get('/u/:id', (req, res) => {
+  const longUrl = urlDatabase[req.params.id].longURL;
+  res.redirect(longUrl);
+});
 
 app.get("/urls/new", (req, res) => {
   let userId = req.session.user_id;
   const templateVars = { user: users[userId] };
-  if (userId) {
+  if (users[userId]) {
     res.render("urls_new", templateVars);
   } else {
-    res.redirect('/login');
+    res.redirect('/urls');
   }
 });
 
 app.get("/urls/:shortURL", (req, res) => {
   let userId = req.session.user_id;
   const shortURL = req.params.shortURL;
+
   const templateVars = {
     shortURL: shortURL,
     longURL: urlDatabase[shortURL].longURL,
@@ -93,8 +103,10 @@ app.get("/register", (req, res) => {
 
 app.post('/urls/:shortURL/delete', (req, res) => {
   let userId = req.session.user_id;
-  if (!users[userId]) {
-    res.status(403).send('Not Found');
+  const shortURL = req.params.shortURL;
+  const userUrls = urlsForUser(userId, urlDatabase);
+  if (!users[userId] || !userUrls[shortURL]) {
+    res.status(401).send('Not Authroized');
   } else {
     const deleteToggle = req.params.shortURL;
     delete urlDatabase[deleteToggle];
@@ -104,10 +116,11 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 
 app.post('/urls/:shortURL', (req, res) => {
   let userId = req.session.user_id;
-  if (!users[userId]) {
-    res.status(403).send('Not Found');
+  const shortURL = req.params.shortURL;
+  const userUrls = urlsForUser(userId, urlDatabase);
+  if (!users[userId] || !userUrls[shortURL]) {
+    res.status(401).send('Not Authroized');
   } else {
-    const shortURL = req.params.shortURL;
     const newLongURL = req.body.longURL;
     urlDatabase[shortURL].longURL = newLongURL;
     res.redirect('/urls');
@@ -142,8 +155,6 @@ app.post('/logout', (req, res) => {
 app.post('/register', (req, res) => {
   const userId = randomValue(6);
   if (req.body.email === '' || req.body.password === '' || getUserByEmail(req.body.email, users)) {
-    // const status = 400;
-    // res.status(status).send('error');
     res.status(403);
     const templateVars = {
       user: null,
