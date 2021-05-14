@@ -119,6 +119,7 @@ app.post('/login', (req, res) => {
     res.status(403).send('Not Found');
   }
   if (users[userId] && bcrypt.compareSync(password, users[userId].password)) {
+    // eslint-disable-next-line
     req.session.user_id = userId;
   } else {
     res.status(403).send('Forbidden');
@@ -144,6 +145,7 @@ app.post('/register', (req, res) => {
       password: bcrypt.hashSync(req.body.password, 10)
     };
   }
+  // eslint-disable-next-line
   req.session.user_id = userId;
   res.redirect("/urls");
 });
